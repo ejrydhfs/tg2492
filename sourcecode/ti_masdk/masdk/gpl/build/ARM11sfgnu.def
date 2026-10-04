@@ -1,0 +1,105 @@
+#  This file is provided under a dual BSD/GPLv2 license.  When using or
+#  redistributing this file, you may do so under either license.
+#
+#  GPL LICENSE SUMMARY
+#
+#  Copyright(c) 2008-2019 Intel Corporation.
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of version 2 of the GNU General Public License as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
+#  The full GNU General Public License is included in this distribution
+#  in the file called LICENSE.GPL.
+#
+#
+#  Contact Information:
+#  Intel Corporation
+#  2200 Mission College Blvd.
+#  Santa Clara, CA  97052
+#
+#  BSD LICENSE
+#
+#  Copyright(c) 2008-2019 Intel Corporation. All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions
+#  are met:
+#
+#    * Redistributions of source code must retain the above copyright
+#      notice, this list of conditions and the following disclaimer.
+#
+#    * Redistributions in binary form must reproduce the above copyright
+#      notice, this list of conditions and the following disclaimer in
+#      the documentation and/or other materials provided with the
+#      distribution.
+#
+#    * Neither the name of Intel Corporation nor the names of its
+#      contributors may be used to endorse or promote products derived
+#      from this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+#
+# File Name: ARM11sfgnu.def
+#
+# DESCRIPTION: ARM11 specific Definitions.
+#
+
+.PHONY: default clean
+
+KERNEL_INC_DIR   := $(KERNEL_DIR)/include
+CC_ARCH_SPECIFIC := -marm -mapcs -mno-sched-prolog -msoft-float -Uarm
+# If FTARCE is not defined (does not work)
+#ifndef CONFIG_FTRACE
+# If FTARCE is not y (does not work)
+#ifneq ($(CONFIG_FUNCTION_TRACER),y)
+# If -pg is not in CFLAGS
+ifneq (,$(findstring -pg,$CFLAGS))
+CC_ARCH_SPECIFIC += -fomit-frame-pointer 
+endif
+
+ifeq ($(ENDIAN),meb)
+CC_ARCH_SPECIFIC += -mbig-endian -DGG_BIG_ENDIAN
+else
+#CC_ARCH_SPECIFIC += -mlittle-endian
+endif
+
+INCLUDES := $(CC_ARCH_SPECIFIC)  -mabi=aapcs-linux -mno-thumb-interwork -D__LINUX_ARM_ARCH__=6 -march=armv6k -mtune=arm1136j-s -Os
+INCLUDES += -D__KERNEL__ -Wno-trigraphs -fno-common  -Wall -Wstrict-prototypes  -fno-strict-aliasing -pipe -DMODULE -DEXPORT_SYMTAB
+INCLUDES += -DCONFIG_ARM_PUMA5 -DGG_LINUX
+INCLUDES += -I$(KERNEL_INC_DIR) -I$(KERNEL_INC_DIR)/asm-arm/mach-avalanche -I$(KERNEL_INC_DIR)/asm-arm/mach-generic -I$(KERNEL_INC_DIR)/asm
+INCLUDES += -I. $(gpl_INC) $(GG_PFORM_EXTRA_INCLUDE) $(MODULE_EXTRA_INC) -I$(TI_include)/linux
+INCLUDES += -c -g
+
+export EXTRA_CFLAGS += $(INCLUDES)
+
+# Module extra compilation flags
+EXTRA_CFLAGS +=
+
+default: 
+	$(QUIET_CMD)$(MAKE) -C $(KERNEL_DIR) M=`pwd` ARCH=arm CROSS_COMPILE=$(CROSS_TOOLS) modules
+
+clean:
+	$(QUIET_CMD)$(RM) -r *.o *~ core .depend .*.cmd *.ko *.mod.c .tmp_versions Module.symvers 
+	$(QUIET_CMD)find . -name *.o -follow | xargs $(RM) 
+	$(QUIET_CMD)find . -name .*.cmd -follow | xargs $(RM) 
+
